@@ -4,22 +4,38 @@ Table user [headercolor: #ff0000] {
   email varchar(255) [not null, unique, note: "User's unique email address, used for login"]
   phone_number varchar(50) [null, note: "User's phone number"]
   password varchar(255) [not null, note: "Hashed password for security"]
+  first_name varchar(255) [not null, note: "First name of the user"]
+  last_name varchar(255) [not null, note: "Last name of the user"]
+  gender varchar(16) [note: "e.g: Male, Female or M, F"]
+  birthday date [note: "date of birth"]
+  photo_profile_url varchar [note: "saved in S3"]
+  created_at timestamp [default: `now()`, not null, note: "Timestamp of user creation"]
+  updated_at timestamp [default: `now()`, not null, note: "Timestamp of last user update"]
+  is_active boolean [default: true, not null, note: "Status of the user account (for soft delete)"]
+  note: "Users with all basic and profile information."
+}
+
+Table patient_profile [headercolor: #ff0000] {
+  id int [pk, note: "id for the patient profile, primary key"]
+  user_id int [ref: > user.id, not null]
   access_code varchar(255) [not null, note: "access code for security"]
-  first_name varchar(255) [not null, note: "First name of the user"]
-  last_name varchar(255) [not null, note: "Last name of the user"]
-  created_at timestamp [default: `now()`, not null, note: "Timestamp of user creation"]
-  updated_at timestamp [default: `now()`, not null, note: "Timestamp of last user update"]
-  is_active boolean [default: true, not null, note: "Status of the user account (for soft delete)"]
-  note: "Users with all basic and profile information."
+  weight decimal(10, 2)
+  blood_type varchar(4) [note: "e.g: O+, B-, ..."]
+  emergency_contact_name varchar [note: "Who call in emergency? e.g Atangana Jean Mari"]
+  emergency_contact_phone varchar [note: "Which phone number call in emergency? e.g: +237 622 223 445"]
+  quater varchar [note: "Formal quater name, e.g: Tsinga, Mokolo, ..."]
+  quater_reference_name varchar [note: "common used name, e.g: Ancienne Mairie Tsinga, Yoyo bar, ..."]
+  street varchar
+  region varchar
+  zip_code varchar
+  country varchar
 }
 
-Table user_profile [headercolor: #ff0000] {
-  id int [pk, note: "id for the user profile, primary key"]
-  user_id int [ref: > user.id]
-  birthday date
-  weight double
-  address varchar
-  photo_profile varchar
+Table lab_agent_profile [headercolor: #ff0000] {
+  id int [pk, note: "id for the patient profile, primary key"]
+  user_id int [ref: > user.id, not null]
+  department varchar(255) [not null, note: "department of the lab agent"]
+  specializations "varchar[]" [note: "e.g: Blood Analysis, Microbiology, ..."]
 }
  
 Table role [headercolor: #ff0000] {
@@ -125,13 +141,14 @@ Table exam_required_preparation {
 
 Table reservation {
   id int [pk, increment]
+  patient_id int [ref: > patient_profile.id]
+  reservation_number varchar [not null, note: "Enterprise/MonthDay/SequenceNumber e.g: BL/0704/0001"]
   exam_date date
   start_time varchar [note: "8:30am"]
   end_time varchar [note: "3:45pm"]
   amount decimal(10, 2) [default: 0]
-  exam_sample_taking_type varchar [note: "'HOME', 'LABO', ..."]
-  reservation_status varchar [note: "PENDING, CANCEL, PAID, ..."]
-  patient_id int [ref: > user.id]
+  sample_taking_location varchar [note: "'HOME', 'LABO', ..."]
+  status varchar [default: "WAITING_PAYMENT", note: "WAITING_PAYMENT(register but not paid), PAID(paid but not get lab response yet), IN_VALIDATION(lab and patient in discusion), VALIDATE(approved time and date),  COMPLETE(exam has done)"]
   payment_method varchar [note: "OM, MOMO, ..."]
   payment_reference varchar
   amount_paid decimal(10, 2)
@@ -147,204 +164,23 @@ Table reservation_item {
   price decimal(10, 2)
   start_time varchar [note: "8:30am"]
   end_time varchar [note: "3:45pm"]
+  exam_media_urls "varchar[]" [default: null, note: "updated or fill only when the exam is completed"]
+}
+
+Table reservation_status {
+  id int [pk, increment]
+  lab_agent_id int [ref: > lab_agent_profile.id, not null]
+  status varchar [note: "WAITING_PAYMENT(register but not paid), PAID(paid but not get lab response yet), IN_VALIDATION(lab and patient in discusion), VALIDATE(approved time and date),  COMPLETE(exam has done)"]
+  comment text [note: ""]
+  created_at timestamp [default: `now()`]
+  update_at timestamp [default: `null`]
 }
 
 Table exam_feedback {
   id int [pk, increment]
   reservation_id int [ref: > reservation.id]
   rating int [note: "rating of the exam taking by the patient"]
-  comment text
-  created_at timestamp [default: `now()`]
-  update_at timestamp [default: `null`]
-}
-
-// Lab Management
-
-// Education & Information
-
-Table article_category {
-  id int [pk, increment]
-  name varchar [not null]
-  description text [not null]
-  is_active boolean [default: true, not null]
-  created_at timestamp [default: `now()`]
-  update_at timestamp [default: `null`]
-}
-
-Table article {
-  id int [pk, increment]
-  title varchar [not null]
-  content text [not null]
-  article_media "varchar[]" [note: "images and videos"]
-  is_active boolean [default: true, not null]
-  created_at timestamp [default: `now()`]
-  update_at timestamp [default: `null`]
-}
-
-Table article_comments {
-  id int [pk, increment]
-  article_id int [ref: > article.id]
-  content text [not null]
-  autor_id int [ref: > user.id]
-  is_active boolean [default: true, not null]
-  created_at timestamp [default: `now()`]
-  update_at timestamp [default: `null`]
-}
-// User management
-Table user [headercolor: #ff0000] {
-  id int [pk, note: "id for the user, primary key"]
-  email varchar(255) [not null, unique, note: "User's unique email address, used for login"]
-  password varchar(255) [not null, note: "Hashed password for security"]
-  first_name varchar(255) [not null, note: "First name of the user"]
-  last_name varchar(255) [not null, note: "Last name of the user"]
-  phone_number varchar(50) [null, note: "User's phone number"]
-  created_at timestamp [default: `now()`, not null, note: "Timestamp of user creation"]
-  updated_at timestamp [default: `now()`, not null, note: "Timestamp of last user update"]
-  is_active boolean [default: true, not null, note: "Status of the user account (for soft delete)"]
-  note: "Users with all basic and profile information."
-}
-
-Table user_profile [headercolor: #ff0000] {
-  id int [pk, note: "id for the user profile, primary key"]
-  user_id int [ref: > user.id]
-  birthday date
-  weight double
-  address varchar
-  photo_profile varchar
-}
- 
-Table role [headercolor: #ff0000] {
-  id int [pk, note: "id for the role, primary key"]
-  name varchar(50) [not null, unique, note: "Unique role name (e.g., NURSE, ADMIN). Permissions are handled in application logic based on this role."]
-  description text [null, note: "Description of the role's responsibilities"]
-  created_at timestamp [default: `now()`, not null]
-  updated_at timestamp [default: `now()`, not null]
-  note: "Simplified user role. Granular permission are removed for simplicity."
-}
- 
-Table permission [headercolor: #ff0000] {
-  id int [pk, note: "id for the permission"]
-  name varchar(100) [not null, unique, note: "Unique permission identifier (e.g., 'create_user')"]
-  description text [null, note: "Description of the permission"]
-  created_at timestamp [default: `now()`, not null]
-  updated_at timestamp [default: `now()`, not null]
-  note: "List of permission used for fine-grained access control"
-}
- 
-Table role_permission [headercolor: #ff0000] {
-  role_id int [ref: > role.id, note: "Foreign key to role"]
-  permission_id int [ref: > permission.id, note: "Foreign key to permission"]
-  created_at timestamp [default: `now()`, not null]
-  indexes {
-    (role_id, permission_id) [pk]
-  }
-  note: "Assigns permission to role"
-}
- 
-Table user_role [headercolor: #ff0000] {
-  user_id int [ref: > user.id, note: "Foreign key to user table"]
-  role_id int [ref: > role.id, note: "Foreign key to role table"]
-  created_at timestamp [default: `now()`, not null]
-  note: "Assignment of role to user. A user can have multiple role."
-  indexes {
-    (user_id, role_id) [pk]
-  }
-}
- 
-Table user_activity_log [headercolor: #ff0000] {
-  id int [pk, note: "id for the activity log entry, primary key"]
-  user_id int [ref: > user.id, not null, note: "Foreign key to the user who performed the action"]
-  action varchar(255) [not null, note: "Description of the action performed (e.g., 'login', 'create_pos')"]
-  target_type varchar(100) [null, note: "Type of entity targeted by the action (e.g., 'exam', 'reservation')"]
-  target_id varchar(36) [null, note: "ID of the entity targeted by the action"]
-  timestamp timestamp [default: `now()`, not null, note: "Timestamp of the action"]
-  note: "Log of user actions with geolocation for audit and presence control."
-}
-
-// Exams Catalog
-Table work_day {
-  id int [pk, increment]
-  week_day varchar [not null, note: "MONDAY, TUESDAY, ..."]
-  start_time varchar [note: "8:30am"]
-  end_time varchar [note: "3:45pm"]
-  is_active boolean [default: true, not null]
-}
-
-Table holiday {
-  id int [pk, increment]
-  date date
-  created_at timestamp [default: `now()`, not null]
-  updated_at timestamp [default: `now()`, not null]
-}
-
-Table work_break {
-  id int [pk, increment]
-  start_time varchar [note: "8:30am"]
-  end_time varchar [note: "3:45pm"]
-  date date
-  is_active boolean [default: true, not null]
-}
-
-Table exam_type {
-    id int [pk, increment]
-    name varchar [not null]
-    description text [default: `null`]
-    is_active boolean [default: true, not null]
-    created_at timestamp [default: `now()`]
-    update_at timestamp [default: `null`]
-}
-
-Table exam {
-    id int [pk, increment]
-    exam_type_id int [ref: > exam_type.id]
-    name varchar [not null]
-    price decimal(10, 2) [default: 0]
-    duration varchar [note: "'30min', '1h'"]
-    description text [default: `null`]
-    is_active boolean [default: true, not null]
-    created_at timestamp [default: `now()`]
-    update_at timestamp [default: `null`]
-}
-
-Table exam_required_preparation {
-  id int [pk, increment]
-  exam_id in [ref: > exam.id]
-  required_preparation varchar [not null]
-  created_at timestamp [default: `now()`]
-  update_at timestamp [default: `null`]
-}
-
-Table reservation {
-  id int [pk, increment]
-  exam_date date
-  start_time varchar [note: "8:30am"]
-  end_time varchar [note: "3:45pm"]
-  amount decimal(10, 2) [default: 0]
-  exam_sample_taking_type varchar [note: "'HOME', 'LABO', ..."]
-  reservation_status varchar [note: "PENDING, CANCEL, PAID, ..."]
-  patient_id int [ref: > user.id]
-  payment_method varchar [note: "OM, MOMO, ..."]
-  payment_reference varchar
-  amount_paid decimal(10, 2)
-  payment_phone varchar
-  beneficiary_phone varchar
-  created_at timestamp [default: `now()`]
-  update_at timestamp [default: `null`]
-}
-
-Table reservation_item {
-  reservation_id int [ref: > reservation.id]
-  exam_id int [ref: > exam.id]
-  price decimal(10, 2)
-  start_time varchar [note: "8:30am"]
-  end_time varchar [note: "3:45pm"]
-}
-
-Table exam_feedback {
-  id int [pk, increment]
-  exam_id int [ref: > exam.id]
-  rating int [note: "rating of the exam taking by the patient"]
-  comment text
+  comment text [note: "what does the patient think about the exam that he has taken"]
   created_at timestamp [default: `now()`]
   update_at timestamp [default: `null`]
 }
